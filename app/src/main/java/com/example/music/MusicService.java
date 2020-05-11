@@ -5,9 +5,12 @@ import android.app.PendingIntent;
 import android.app.Service;
 import android.content.ContentUris;
 import android.content.Intent;
+import android.media.AudioManager;
 import android.media.MediaPlayer;
+import android.net.Uri;
 import android.os.Binder;
 import android.os.IBinder;
+import android.os.PowerManager;
 import android.provider.MediaStore;
 import android.util.Log;
 
@@ -47,7 +50,6 @@ public class MusicService extends Service implements MediaPlayer.OnPreparedListe
 
     @Override
     public IBinder onBind(Intent intent) {
-        // TODO: Return the communication channel to the service.
         return this.musicBind;
     }
 
@@ -61,12 +63,12 @@ public class MusicService extends Service implements MediaPlayer.OnPreparedListe
     @Override
     public void onPrepared(MediaPlayer mp) {
         mp.start();
-        Intent notIntent = new Intent(this, MainActivity.class);
-        notIntent.addFlags(Intent.FLAG_ACTIVITY_CLEAR_TOP);
-        PendingIntent pendInt = PendingIntent.getActivity(this, 0, notIntent, PendingIntent.FLAG_UPDATE_CURRENT);
-        Notification.Builder builder = new Notification.Builder(this);
-        builder.setContentIntent(pendInt).setSmallIcon(R.drawable.play).setTicker(this.songTitle).setOngoing(true).setContentTitle("Playing").setContentText(this.songTitle);
-        startForeground(1, builder.build());
+//        Intent notIntent = new Intent(this, MainActivity.class);
+//        notIntent.addFlags(Intent.FLAG_ACTIVITY_CLEAR_TOP);
+//        PendingIntent pendInt = PendingIntent.getActivity(this, 0, notIntent, PendingIntent.FLAG_UPDATE_CURRENT);
+//        Notification.Builder builder = new Notification.Builder(this);
+//        builder.setContentIntent(pendInt).setSmallIcon(R.drawable.play).setTicker(this.songTitle).setOngoing(true).setContentTitle("Playing").setContentText(this.songTitle);
+//        startForeground(1, builder.build());
     }
 
     @Override
@@ -74,6 +76,11 @@ public class MusicService extends Service implements MediaPlayer.OnPreparedListe
         Log.v("MUSIC PLAYER", "Playback Error");
         mp.reset();
         return false;
+    }
+
+    @Override
+    public void onDestroy() {
+        stopForeground(true);
     }
 
     @Override
@@ -85,8 +92,8 @@ public class MusicService extends Service implements MediaPlayer.OnPreparedListe
     }
 
     public void initMusicPlayer() {
-        this.player.setWakeMode(getApplicationContext(), 1);
-        this.player.setAudioStreamType(3);
+        this.player.setWakeMode(getApplicationContext(), PowerManager.PARTIAL_WAKE_LOCK);
+        this.player.setAudioStreamType(AudioManager.STREAM_MUSIC);
         this.player.setOnPreparedListener(this);
         this.player.setOnCompletionListener(this);
         this.player.setOnErrorListener(this);
@@ -103,9 +110,12 @@ public class MusicService extends Service implements MediaPlayer.OnPreparedListe
     public void playSong() {
         this.player.reset();
         Song playSong = (Song) this.songs.get(this.songPosn);
-        this.songTitle = playSong.getTitle();
+        long currSong = playSong.getID();
+        Uri trackUri = ContentUris.withAppendedId(
+                android.provider.MediaStore.Audio.Media.EXTERNAL_CONTENT_URI,
+                currSong);
         try {
-            this.player.setDataSource(getApplicationContext(), ContentUris.withAppendedId(MediaStore.Audio.Media.EXTERNAL_CONTENT_URI, playSong.getID()));
+            this.player.setDataSource(getApplicationContext(), trackUri);
         } catch (Exception e) {
             Log.e("MUSIC SERVICE", "Error setting data source", e);
         }

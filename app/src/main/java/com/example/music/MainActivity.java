@@ -64,7 +64,7 @@ public class MainActivity extends AppCompatActivity implements MediaController.M
         setContentView((int) R.layout.activity_main);
         if (checkPermissionREAD_EXTERNAL_STORAGE(this)) {
             this.songView = (ListView) findViewById(R.id.song_list);
-            this.songList = new ArrayList<>();
+            this.songList = new ArrayList<Song>();
             getSongList();
             Collections.sort(this.songList, new Comparator<Song>() {
                 public int compare(Song a, Song b) {
@@ -225,7 +225,7 @@ public class MainActivity extends AppCompatActivity implements MediaController.M
         super.onStart();
         if (this.playIntent == null) {
             this.playIntent = new Intent(this, MusicService.class);
-            bindService(this.playIntent, this.musicConnection, 0);
+            bindService(this.playIntent, this.musicConnection, Context.BIND_AUTO_CREATE);
             startService(this.playIntent);
         }
     }
